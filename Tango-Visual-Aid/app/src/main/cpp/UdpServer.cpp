@@ -5,8 +5,8 @@ UdpServer::UdpServer() {
 
 // TODO do something lol
 UdpServer::~UdpServer() {
-  //server_addr = NULL; // prevents old info from being saved
-  //close(socket_fd);
+  server_addr = NULL; // prevents old info from being saved
+  close(socket_fd);
 }
 
 // used to setup and connect to server
@@ -25,6 +25,11 @@ int UdpServer::connectSocket(const char* ip, int port) {
 
   LOGI("UDP: end connect, %d", status);
   return 0;
+}
+
+int UdpServer::closeSocket() {
+  server_addr = NULL; // prevents old info from being saved
+  close(socket_fd);
 }
 
 // sends message to all other users online

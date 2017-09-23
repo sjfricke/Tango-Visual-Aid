@@ -24,6 +24,8 @@ class UdpServer {
   // returns 0 on success
   int connectSocket(const char* ip, int port);
 
+  int closeSocket();
+
   // sends message to all other users online
   // returns 0 on success
   int send(char* message);
