@@ -8,7 +8,7 @@
 
 #include <cstdlib>
 #include <unistd.h>
-
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -62,6 +62,8 @@ public:
   // Called when new new point cloud data is available from the Tango Service.
   void OnPointCloudAvailable(const TangoPointCloud* point_cloud);
 
+  void OnPoseAvailable(const TangoPoseData* pose);
+
 private:
   TangoConfig tango_config_;
 
@@ -75,10 +77,11 @@ private:
   int callback_delay_count = 0;
 
   UdpServer m_server;
+  bool m_server_ready = false;
 
-  std::string TEMP = "192.168.1.100";
+  std::string TEMP = "192.168.1.157";
 
-  char message_buffer[128];
+  char* message_buffer;
 
 };
 #endif //DEPTH_VIBERATION_VISUAL_AID_H

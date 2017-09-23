@@ -5,7 +5,6 @@ UdpServer::UdpServer() {
 
 // TODO do something lol
 UdpServer::~UdpServer() {
-  server_addr = NULL; // prevents old info from being saved
   close(socket_fd);
 }
 
@@ -27,19 +26,18 @@ int UdpServer::connectSocket(const char* ip, int port) {
   return 0;
 }
 
-int UdpServer::closeSocket() {
-  server_addr = NULL; // prevents old info from being saved
+void UdpServer::closeSocket() {
   close(socket_fd);
 }
 
 // sends message to all other users online
 // returns 0 on success
-int UdpServer::send(char* message) {
+int UdpServer::send(char** message, int message_size) {
   int status;
 
   // WARNING: Can't send message size greater then MaxBuffer
   // No reason to check since these should be small packets
-  status = sendto(socket_fd, message, strlen(message), 0, (struct sockaddr*) &server_addr, sizeof(server_addr));
+  status = sendto(socket_fd, *message, message_size, 0, (struct sockaddr*) &server_addr, sizeof(server_addr));
   if (status < 0) {
     LOGE("UDP: sendto() ERROR: %d", status); return 1;
   }

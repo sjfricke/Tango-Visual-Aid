@@ -7,11 +7,15 @@ constexpr int kTangoCoreMinimumVersion = 9377;
 void OnPointCloudAvailableRouter(void* context, const TangoPointCloud* point_cloud) {
   static_cast<VisualAid*>(context)->OnPointCloudAvailable(point_cloud);
 }
+void onPoseAvailableRouter(void* context, const TangoPoseData* pose) {
+  static_cast<VisualAid*>(context)->OnPoseAvailable(pose);
+}
 
 void VisualAid::OnCreate(JNIEnv* env, jobject caller_activity)
 {
   // Check the installed version of the TangoCore.  If it is too old, then
   // it will not support the most up to date features.
+  int status;
   int version = 0;
   err = TangoSupport_GetTangoVersion(env, caller_activity, &version);
 
@@ -33,7 +37,17 @@ void VisualAid::OnCreate(JNIEnv* env, jobject caller_activity)
   // Here you need to name the function and the JNI argument/parameter type
   on_demand_method_ = env->GetMethodID(handlerClass, "pulse", "(I)V");
 
-  m_server.connectSocket(TEMP.c_str(), 5000);
+  message_buffer = (char*)malloc(sizeof(128));
+  if (message_buffer == nullptr) {
+    LOGE("Message_Buffer didn't allocate");
+  }
+
+  status = m_server.connectSocket(TEMP.c_str(), 5000);
+  if (status == 0) {
+    m_server_ready = true;
+  } else {
+    LOGE("Failed to connect to socket server");
+  }
 
 } //OnCreate
 
@@ -75,7 +89,17 @@ void VisualAid::OnTangoServiceConnected(JNIEnv* env, jobject iBinder)
   ///////// Create Callbacks for data ////////
   ////////////////////////////////////////////
 
-  err = TangoService_connectOnPointCloudAvailable(OnPointCloudAvailableRouter);
+  // TangoCoordinateFramePair is used to tell Tango Service about the frame of
+  // references that the applicaion would like to listen to.
+  TangoCoordinateFramePair pair;
+  pair.base = TANGO_COORDINATE_FRAME_START_OF_SERVICE;
+  pair.target = TANGO_COORDINATE_FRAME_DEVICE;
+  if (TangoService_connectOnPoseAvailable(1, &pair, onPoseAvailableRouter) != TANGO_SUCCESS) {
+    LOGE("connectOnPoseAvailable error.");
+    std::exit(EXIT_SUCCESS);
+  }
+
+    err = TangoService_connectOnPointCloudAvailable(OnPointCloudAvailableRouter);
   if (TANGO_SUCCESS != err) {
     LOGE("connectOnPointCloudAvailable error code: %d", err);
     std::exit(EXIT_SUCCESS);
@@ -108,6 +132,11 @@ void VisualAid::OnDestroy() {
 
   calling_activity_obj_ = nullptr;
   on_demand_method_ = nullptr;
+
+  if (message_buffer != nullptr) {
+    free(message_buffer);
+    message_buffer = nullptr;
+  }
 }
 
 void VisualAid::OnPointCloudAvailable(const TangoPointCloud* point_cloud)
@@ -131,8 +160,8 @@ void VisualAid::OnPointCloudAvailable(const TangoPointCloud* point_cloud)
 
   // Log the number of points and average depth.
   //LOGI("Point count: %d (count: %d). Average depth (m): %.3f",  point_cloud->num_points, count, average_depth);
-  sprintf(message_buffer, "Point count: %d (count: %d). Average depth (m): %.3f",  point_cloud->num_points, count, average_depth);
-  m_server.send(message_buffer);
+  //sprintf(message_buffer, "Point count: %f (count: %d). Average depth (m): %.3f",  point_cloud->num_points, count, average_depth);
+  //m_server.send(message_buffer);
 
   // Need to set a delay in how often we send a callback to JNI since
   // it will start the viberation too often
@@ -154,5 +183,52 @@ void VisualAid::OnPointCloudAvailable(const TangoPointCloud* point_cloud)
 
   } else {
     callback_delay_count++;
+  }
+}
+
+static float x = 0.0f;
+static float y = 2.0f;
+char orientationPacket[4];
+void VisualAid::OnPoseAvailable(const TangoPoseData* pose) {
+  double aim;
+
+  if (m_server_ready == true) {
+    //double yaw = std::atan2(2.0*(pose->orientation[1]*pose->orientation[2] + pose->orientation[3]*pose->orientation[0]), pose->orientation[3]*pose->orientation[3] - pose->orientation[0]*pose->orientation[0] - pose->orientation[1]*pose->orientation[1] + pose->orientation[2]*pose->orientation[2]);
+    // double pitch = std::asin(-2.0*(pose->orientation[0]*pose->orientation[2] - pose->orientation[3]*pose->orientation[1]));
+    // -PI to PI
+//    double roll = std::atan2(2.0f * (pose->orientation[0] * pose->orientation[1] +
+//                                 pose->orientation[3] * pose->orientation[2]),
+//                                 pose->orientation[3] * pose->orientation[3] +
+//                                 pose->orientation[0] * pose->orientation[0] -
+//                                 pose->orientation[1] * pose->orientation[1] -
+//                                 pose->orientation[2] * pose->orientation[2]);
+//
+//    double dest = (std::atan2(x - pose->translation[0], y - pose->translation[1]));
+
+    double roll = std::atan2(2.0f * (pose->orientation[2] * pose->orientation[1] +
+                                 pose->orientation[3] * pose->orientation[0]),
+                             pose->orientation[3] * pose->orientation[3] +
+                                 pose->orientation[2] * pose->orientation[2] -
+                                 pose->orientation[1] * pose->orientation[1] -
+                                 pose->orientation[0] * pose->orientation[0]);
+
+    double dest = (std::atan2(x - pose->translation[2], y - pose->translation[1]));
+
+    double r = dest + roll;
+    r = (r <= -M_PI) ? r + 2 * M_PI : r;
+    r = (r >= M_PI) ? r - 2 * M_PI : r;
+
+    aim = (r + M_PI) * (256 / M_PI);
+
+    if (aim < 128) { aim = 128; }
+    if (aim > 383) { aim = 383; }
+    aim -= 128;
+
+    int aim_int = static_cast <int> (std::floor(aim));
+    sprintf(message_buffer, "%d", aim_int);
+
+    LOGI("P: %f, %f, %f O: %f, %f, %f V: %s", pose->translation[0], pose->translation[1], pose->translation[2],
+         pose->orientation[0], pose->orientation[1], pose->orientation[2], message_buffer);
+    m_server.send(&message_buffer, strlen(message_buffer));
   }
 }
