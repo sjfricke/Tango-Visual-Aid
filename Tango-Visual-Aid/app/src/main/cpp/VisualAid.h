@@ -1,7 +1,6 @@
 #ifndef DEPTH_VIBERATION_VISUAL_AID_H
 #define DEPTH_VIBERATION_VISUAL_AID_H
 
-#include <android/log.h>
 #include <jni.h>
 
 #include "tango_client_api.h"   // NOLINT
@@ -13,11 +12,9 @@
 #include <string>
 #include <vector>
 
-// used to get logcat outputs which can be regex filtered by the LOG_TAG we give
-// So in Logcat you can filter this example by putting VisualAid
-#define LOG_TAG "VisualAid"
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#include "Util.h"
+#include "UdpServer.h"
+
 
 void OnPointCloudAvailableRouter(void*, const TangoPointCloud* point_cloud);
 
@@ -76,6 +73,12 @@ private:
   jmethodID on_demand_method_;
 
   int callback_delay_count = 0;
+
+  UdpServer m_server;
+
+  std::string TEMP = "192.168.1.100";
+
+  char message_buffer[128];
 
 };
 #endif //DEPTH_VIBERATION_VISUAL_AID_H

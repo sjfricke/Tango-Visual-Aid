@@ -33,6 +33,8 @@ void VisualAid::OnCreate(JNIEnv* env, jobject caller_activity)
   // Here you need to name the function and the JNI argument/parameter type
   on_demand_method_ = env->GetMethodID(handlerClass, "pulse", "(I)V");
 
+  m_server.connectSocket(TEMP.c_str(), 5000);
+
 } //OnCreate
 
 void VisualAid::OnTangoServiceConnected(JNIEnv* env, jobject iBinder)
@@ -128,8 +130,9 @@ void VisualAid::OnPointCloudAvailable(const TangoPointCloud* point_cloud)
   }
 
   // Log the number of points and average depth.
-  LOGI("Point count: %d (count: %d). Average depth (m): %.3f",
-       point_cloud->num_points, count, average_depth);
+  //LOGI("Point count: %d (count: %d). Average depth (m): %.3f",  point_cloud->num_points, count, average_depth);
+  sprintf(message_buffer, "Point count: %d (count: %d). Average depth (m): %.3f",  point_cloud->num_points, count, average_depth);
+  m_server.send(message_buffer);
 
   // Need to set a delay in how often we send a callback to JNI since
   // it will start the viberation too often
