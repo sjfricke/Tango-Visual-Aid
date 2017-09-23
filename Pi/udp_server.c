@@ -30,7 +30,7 @@ void error(const char *msg) {
 int main(int argc, char *argv[]) {
 
   char receiveMsg[MSG_SIZE]; // message buffer
-  char returnMsg[] = "message received\n";
+//  char returnMsg[] = "message received\n";
   int msgSize; // used to store incoming message size
   int status; // used to check status of c functions return values
   int port;
@@ -77,8 +77,8 @@ int main(int argc, char *argv[]) {
     memset(receiveMsg, 0, MSG_SIZE);
 
     // sends back message to sender
-    status = sendto(mySocket, returnMsg, strlen(returnMsg), 0, (struct sockaddr *)&dest, socksize);
-    if (status < 0) { error("ERROR: on send\n"); }
+    //  status = sendto(mySocket, returnMsg, strlen(returnMsg), 0, (struct sockaddr *)&dest, socksize);
+    //  if (status < 0) { error("ERROR: on send\n"); }
 
   } // end forever loop
 
