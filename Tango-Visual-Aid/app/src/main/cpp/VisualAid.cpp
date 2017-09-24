@@ -188,33 +188,29 @@ void VisualAid::OnPointCloudAvailable(const TangoPointCloud* point_cloud)
 
 static float x = 0.0f;
 static float y = 2.0f;
+double fVector[] = {0.0, 1.0}; // forward vector
 char orientationPacket[4];
 void VisualAid::OnPoseAvailable(const TangoPoseData* pose) {
   double aim;
 
   if (m_server_ready == true) {
-    double o_x = pose->orientation[0];
-    double o_y = pose->orientation[1];
-    double o_z = pose->orientation[2];
-    double o_w = pose->orientation[3];
 
-    // roll (x-axis rotation)
-    double sinr = 2.0 * (o_w *o_x + o_y * o_z);
-    double cosr = 1.0 - 2.0 * (o_x * o_x + o_y * o_y);
-    double roll = std::atan2(sinr, cosr);
+    // Gets position based vector from destination
+    double posVector = (std::atan2(x - pose->translation[0], y - pose->translation[1]));
 
-//    // pitch (y-axis rotation)
-//    double sinp = 2.0 * (o_w * o_y - o_z * o_x);
-//    double pitch = std::asin(sinp);
-//
-//    // yaw (z-axis rotation)
-//    double siny = 2.0 * (o_w * o_z + o_x * o_y);
-//    double cosy = 1.0 - 2.0 * (o_y * o_y + o_z * o_z);
-//    double yaw = std::atan2(siny, cosy);
+    // gives a normalized -1 to 1 value of x and y
+    double nVecX = -2 * (pose->orientation[0] * pose->orientation[2]
+                       + pose->orientation[3] * pose->orientation[1]);
+    double nVecY = -2 * (pose->orientation[1] * pose->orientation[2]
+                       - pose->orientation[3] * pose->orientation[0]);
 
-    double dest = (std::atan2(x - pose->translation[0], y - pose->translation[1]));
+    double dot = fVector[0]*nVecX + fVector[1]*nVecY;      // dot product between [x1, y1] and [x2, y2]
+    double det = fVector[0]*nVecY - fVector[1]*nVecX;      // determinant
+    double rotateVector = atan2(det, dot);  // atan2(y, x) or atan2(sin, cos)
 
-    double r = dest + roll;
+    double r = posVector + rotateVector;
+
+    //LOGI("%f, %f, --- %f %f %f ", roll, pitch, _angle, ax, ay);
     r = (r <= -M_PI) ? r + 2 * M_PI : r;
     r = (r >= M_PI) ? r - 2 * M_PI : r;
 
