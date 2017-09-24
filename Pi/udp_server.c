@@ -17,6 +17,7 @@
 #include <string.h>
 #include <netdb.h>
 #include <stdio.h>
+#include <wiringPi.h>
 
 #define DEFAULT_PORT 5000
 #define MSG_SIZE 512
@@ -39,6 +40,14 @@ int main(int argc, char *argv[]) {
   struct sockaddr_in serv; // socket info about our server
   int mySocket;            // socket used to listen for incoming connections
   socklen_t socksize = sizeof(struct sockaddr_in);
+
+  // sets up servo control
+  wiringPiSetupGpio();
+  //softPwmCreate(18,0,500);
+  pinMode(18,PWM_OUTPUT);
+  pwmSetMode(PWM_MODE_MS);
+  pwmSetClock(192);
+  pwmSetRange(2000);
 
   // see if passed port in argument
   if (argc == 2) {
@@ -65,13 +74,26 @@ int main(int argc, char *argv[]) {
   if (status < 0) { error("ERROR binding socket \n"); }
   else { printf("Socket Binded on port %d\n", port); }
 
+  int motor = 150;
+  int lastMotor = 0;
+
   for (;;) { // keeps daemon running forever
 
     // used to get message of size MSG_SIZE
     msgSize = recvfrom(mySocket, receiveMsg, MSG_SIZE, 0, (struct sockaddr *)&dest, &socksize);
     if (msgSize < 0) { error("ERROR: on recvfrom\n"); }
 
-    printf("Client sent: %s\n", receiveMsg);
+   // normalizes receiveMsg to 50-250
+    motor = atoi(receiveMsg);
+    motor = (int)((motor/1.275)+50);
+
+    printf("%s  --- %d --- (%d)\n", receiveMsg, motor, lastMotor);
+
+    //writes to servo
+    if (lastMotor != motor) {
+         lastMotor = motor;
+         pwmWrite(18,motor);
+    }
 
     // clears receive message buffer
     memset(receiveMsg, 0, MSG_SIZE);
