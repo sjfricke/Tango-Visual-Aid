@@ -1,5 +1,5 @@
 #include "VisualAid.h"
-
+#include <numeric>
 // We can set a minimum version of tango for our application
 constexpr int kTangoCoreMinimumVersion = 9377;
 
@@ -193,26 +193,26 @@ void VisualAid::OnPoseAvailable(const TangoPoseData* pose) {
   double aim;
 
   if (m_server_ready == true) {
-    //double yaw = std::atan2(2.0*(pose->orientation[1]*pose->orientation[2] + pose->orientation[3]*pose->orientation[0]), pose->orientation[3]*pose->orientation[3] - pose->orientation[0]*pose->orientation[0] - pose->orientation[1]*pose->orientation[1] + pose->orientation[2]*pose->orientation[2]);
-    // double pitch = std::asin(-2.0*(pose->orientation[0]*pose->orientation[2] - pose->orientation[3]*pose->orientation[1]));
-    // -PI to PI
-//    double roll = std::atan2(2.0f * (pose->orientation[0] * pose->orientation[1] +
-//                                 pose->orientation[3] * pose->orientation[2]),
-//                                 pose->orientation[3] * pose->orientation[3] +
-//                                 pose->orientation[0] * pose->orientation[0] -
-//                                 pose->orientation[1] * pose->orientation[1] -
-//                                 pose->orientation[2] * pose->orientation[2]);
+    double o_x = pose->orientation[0];
+    double o_y = pose->orientation[1];
+    double o_z = pose->orientation[2];
+    double o_w = pose->orientation[3];
+
+    // roll (x-axis rotation)
+    double sinr = 2.0 * (o_w *o_x + o_y * o_z);
+    double cosr = 1.0 - 2.0 * (o_x * o_x + o_y * o_y);
+    double roll = std::atan2(sinr, cosr);
+
+//    // pitch (y-axis rotation)
+//    double sinp = 2.0 * (o_w * o_y - o_z * o_x);
+//    double pitch = std::asin(sinp);
 //
-//    double dest = (std::atan2(x - pose->translation[0], y - pose->translation[1]));
+//    // yaw (z-axis rotation)
+//    double siny = 2.0 * (o_w * o_z + o_x * o_y);
+//    double cosy = 1.0 - 2.0 * (o_y * o_y + o_z * o_z);
+//    double yaw = std::atan2(siny, cosy);
 
-    double roll = std::atan2(2.0f * (pose->orientation[2] * pose->orientation[1] +
-                                 pose->orientation[3] * pose->orientation[0]),
-                             pose->orientation[3] * pose->orientation[3] +
-                                 pose->orientation[2] * pose->orientation[2] -
-                                 pose->orientation[1] * pose->orientation[1] -
-                                 pose->orientation[0] * pose->orientation[0]);
-
-    double dest = (std::atan2(x - pose->translation[2], y - pose->translation[1]));
+    double dest = (std::atan2(x - pose->translation[0], y - pose->translation[1]));
 
     double r = dest + roll;
     r = (r <= -M_PI) ? r + 2 * M_PI : r;
@@ -225,10 +225,20 @@ void VisualAid::OnPoseAvailable(const TangoPoseData* pose) {
     aim -= 128;
 
     int aim_int = static_cast <int> (std::floor(aim));
-    sprintf(message_buffer, "%d", aim_int);
+    sprintf(message_buffer, "%d", 255- aim_int);
 
-    LOGI("P: %f, %f, %f O: %f, %f, %f V: %s", pose->translation[0], pose->translation[1], pose->translation[2],
-         pose->orientation[0], pose->orientation[1], pose->orientation[2], message_buffer);
+   //LOGI("P: %f, %f, %f O: %f, %f, %f V: %s", pose->translation[0], pose->translation[1], pose->translation[2],
+   //     pose->orientation[0]* 100.0, pose->orientation[1]* 100.0, pose->orientation[2]* 100.0, message_buffer);
     m_server.send(&message_buffer, strlen(message_buffer));
   }
+}
+
+void VisualAid::NewIp(const char* ipAddr) {
+  m_server_ready = false;
+  m_server.closeSocket();
+
+  m_server.connectSocket(ipAddr, 5000);
+  m_server_ready = true;
+
+  LOGI("Success in new IP connection");
 }

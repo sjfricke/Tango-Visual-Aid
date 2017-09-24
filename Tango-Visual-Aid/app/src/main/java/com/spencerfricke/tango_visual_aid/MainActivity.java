@@ -6,10 +6,16 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 
 public class MainActivity extends Activity {
 
     Vibrator vibrator;
+    private CustomDrawerLayout mDrawerLayout;
+    private Button mChangeIpButton;
+    private EditText newIpText;
 
     // Tango Service connection.
     ServiceConnection mTangoServiceConnection = new ServiceConnection() {
@@ -33,6 +39,18 @@ public class MainActivity extends Activity {
 
         // Need to activate the Vibrator service before it can be used
         vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
+        mChangeIpButton = (Button)findViewById(R.id.change_ip_button);
+        newIpText = (EditText)findViewById(R.id.ip_address_input);
+        mDrawerLayout = (CustomDrawerLayout) findViewById(R.id.drawer_layout);
+
+
+        mChangeIpButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View arg0) {
+                String newIp = newIpText.getText().toString();
+                TangoJniNative.newIp(newIp);
+            }
+        });
     }
 
     @Override

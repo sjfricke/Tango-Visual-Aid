@@ -58,6 +58,8 @@ public:
   // @JavaVM java_vm: the Java VM is using from the Java layer.
   void SetJavaVM(JavaVM* java_vm) { java_vm_ = java_vm; }
 
+  void NewIp(const char* ipAddr);
+
   // Tango Service point cloud callback function for depth data.
   // Called when new new point cloud data is available from the Tango Service.
   void OnPointCloudAvailable(const TangoPointCloud* point_cloud);
@@ -79,7 +81,7 @@ private:
   UdpServer m_server;
   bool m_server_ready = false;
 
-  std::string TEMP = "192.168.1.157";
+  std::string TEMP = "192.168.1.172";
 
   char* message_buffer;
 

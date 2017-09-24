@@ -27,6 +27,15 @@ Java_com_spencerfricke_tango_1visual_1aid_TangoJniNative_onTangoServiceConnected
 }
 
 JNIEXPORT void JNICALL
+Java_com_spencerfricke_tango_1visual_1aid_TangoJniNative_newIp(
+    JNIEnv* env, jobject, jobject binder, jstring ipAddr) {
+
+  jboolean copy = JNI_TRUE;
+  const char* _ipAddr = env->GetStringUTFChars(ipAddr, &copy);
+  app.NewIp(_ipAddr);
+}
+
+JNIEXPORT void JNICALL
 Java_com_spencerfricke_tango_1visual_1aid_TangoJniNative_onPause(
     JNIEnv*, jobject) {
   app.OnPause();

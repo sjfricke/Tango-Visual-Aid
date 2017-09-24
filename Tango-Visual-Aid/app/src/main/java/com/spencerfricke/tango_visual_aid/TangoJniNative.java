@@ -39,6 +39,11 @@ public class TangoJniNative {
      */
     public static native void onTangoServiceConnected(IBinder binder);
 
+     /**
+      * sets up a new IP to connect to
+      */
+     public static native void newIp(String ipAddr);
+
     /**
      * Disconnect and stop Tango service.
      */
@@ -48,5 +53,7 @@ public class TangoJniNative {
      * Signal that the activity has been destroyed and remove any cached references.
      */
     public static native void onDestroy();
+
+
 
 }
